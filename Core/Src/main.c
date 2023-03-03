@@ -42,6 +42,7 @@
 #define PING_TIME 50000  //period of sending ping package
 #define BUFF_SIM_SIZE 76 //size of RX SIM buffer
 #define MESSAGE_TYPE_BUFF_SIZE 70
+#define GET_DATA_PERIOD 30000
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -70,10 +71,10 @@ const osThreadAttr_t defaultTask_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
-/* Definitions for GetTempTask */
-osThreadId_t GetTempTaskHandle;
-const osThreadAttr_t GetTempTask_attributes = {
-  .name = "GetTempTask",
+/* Definitions for GetDataTask */
+osThreadId_t GetDataTaskHandle;
+const osThreadAttr_t GetDataTask_attributes = {
+  .name = "GetDataTask",
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal1,
 };
@@ -146,6 +147,11 @@ osTimerId_t PingTimerHandle;
 const osTimerAttr_t PingTimer_attributes = {
   .name = "PingTimer"
 };
+/* Definitions for DataTimer */
+osTimerId_t DataTimerHandle;
+const osTimerAttr_t DataTimer_attributes = {
+  .name = "DataTimer"
+};
 /* Definitions for UART1Mutex */
 osMutexId_t UART1MutexHandle;
 const osMutexAttr_t UART1Mutex_attributes = {
@@ -156,10 +162,10 @@ osSemaphoreId_t PINGSemHandle;
 const osSemaphoreAttr_t PINGSem_attributes = {
   .name = "PINGSem"
 };
-/* Definitions for SemGetTemp */
-osSemaphoreId_t SemGetTempHandle;
-const osSemaphoreAttr_t SemGetTemp_attributes = {
-  .name = "SemGetTemp"
+/* Definitions for SemGetData */
+osSemaphoreId_t SemGetDataHandle;
+const osSemaphoreAttr_t SemGetData_attributes = {
+  .name = "SemGetData"
 };
 /* USER CODE BEGIN PV */
 
@@ -172,7 +178,7 @@ uint8_t Start_SIM800 = 0; //show that SIM800 started well
 uint8_t RX = 0;  //show that SIM800 transmitted some data
 uint8_t Broker_connect = 0; //show that SIM800 connect to broker
 uint8_t Tech_ans_wait = 0; //show that we waiting special answer from module
-uint8_t Get_temp = 0; //show that we have ask from server
+uint8_t Get_data = 0; //show that we have ask from server to get data
 
 uint8_t str_SIM800[BUFF_SIM_SIZE] = {};
 uint8_t SIM800BuffRx[BUFF_SIM_SIZE] = {}; //buffer for RX data from SIM800
@@ -202,7 +208,7 @@ static void MX_USART2_UART_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_I2C1_Init(void);
 void StartDefaultTask(void *argument);
-void StartGetTempTask(void *argument);
+void StartGetDataTask(void *argument);
 void StartDebugTask(void *argument);
 void StartSIM800SendTask(void *argument);
 void PINGStartTask(void *argument);
@@ -211,6 +217,7 @@ void StartMQTTConnectTask(void *argument);
 void StartMessHandlerTask(void *argument);
 void StartGetFirmware(void *argument);
 void CallbackPingTimer(void *argument);
+void CallbackDataTimer(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -274,8 +281,8 @@ int main(void)
   /* creation of PINGSem */
   PINGSemHandle = osSemaphoreNew(1, 0, &PINGSem_attributes);
 
-  /* creation of SemGetTemp */
-  SemGetTempHandle = osSemaphoreNew(1, 0, &SemGetTemp_attributes);
+  /* creation of SemGetData */
+  SemGetDataHandle = osSemaphoreNew(1, 0, &SemGetData_attributes);
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
@@ -284,6 +291,9 @@ int main(void)
   /* Create the timer(s) */
   /* creation of PingTimer */
   PingTimerHandle = osTimerNew(CallbackPingTimer, osTimerPeriodic, NULL, &PingTimer_attributes);
+
+  /* creation of DataTimer */
+  DataTimerHandle = osTimerNew(CallbackDataTimer, osTimerPeriodic, NULL, &DataTimer_attributes);
 
   /* USER CODE BEGIN RTOS_TIMERS */
   /* start timers, add new ones, ... */
@@ -307,8 +317,8 @@ int main(void)
   /* creation of defaultTask */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
-  /* creation of GetTempTask */
-  GetTempTaskHandle = osThreadNew(StartGetTempTask, NULL, &GetTempTask_attributes);
+  /* creation of GetDataTask */
+  GetDataTaskHandle = osThreadNew(StartGetDataTask, NULL, &GetDataTask_attributes);
 
   /* creation of DebugTask */
   DebugTaskHandle = osThreadNew(StartDebugTask, NULL, &DebugTask_attributes);
@@ -578,7 +588,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1|GPIO_PIN_3, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_SET);
@@ -592,13 +602,17 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(FLASH_CS_GPIO_Port, FLASH_CS_Pin, GPIO_PIN_SET);
 
-  /*Configure GPIO pins : PC1 PC2 PC3 SIM_START_Pin
-                           SIM_RESET_Pin */
-  GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3|SIM_START_Pin
-                          |SIM_RESET_Pin;
+  /*Configure GPIO pins : PC1 PC3 SIM_START_Pin SIM_RESET_Pin */
+  GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_3|SIM_START_Pin|SIM_RESET_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PC2 */
+  GPIO_InitStruct.Pin = GPIO_PIN_2;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PA4 */
@@ -803,61 +817,53 @@ void StartDefaultTask(void *argument)
 	  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_6);
 	  osDelay(500);
 
-	  //if we have flag, start measuring temperature
-	  if ((!HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_4) || Get_temp) && Broker_connect)
+	  //if we have flag, start getting data
+	  if (Get_data && Broker_connect)
 	  {
-		osSemaphoreRelease(SemGetTempHandle);
-		Get_temp = 0;
+		osSemaphoreRelease(SemGetDataHandle);
+		Get_data = 0;
 	  }
   }
   /* USER CODE END 5 */
 }
 
-/* USER CODE BEGIN Header_StartGetTempTask */
+/* USER CODE BEGIN Header_StartGetDataTask */
 /**
-* @brief Function implementing the GetTempTask thread.
+* @brief Function implementing the GetDataTask thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_StartGetTempTask */
-void StartGetTempTask(void *argument)
+/* USER CODE END Header_StartGetDataTask */
+void StartGetDataTask(void *argument)
 {
-  /* USER CODE BEGIN StartGetTempTask */
+  /* USER CODE BEGIN StartGetDataTask */
 	message_type msg; //string for queue
-	int16_t temp;
-	float half_temp;
+	uint8_t power;
+	uint8_t temp = 23;
+	uint8_t humidity = 50;
   /* Infinite loop */
   for(;;)
   {
-
 	  // wait semaphore for measuring temperature
-	  if (osSemaphoreAcquire(SemGetTempHandle, osWaitForever) == osOK)
+	  if (osSemaphoreAcquire(SemGetDataHandle, osWaitForever) == osOK)
 	  {
 
+		  // get temp and humidity
 		  // Paste code for RS485
-		  strcpy(&(msg.str), "RS485_data\r\n\0");
-		  osMessageQueuePut(SIM800SendQueueHandle, &msg, 0, osWaitForever);
-		  //uint8_t ok;
-		  //DS_INIT(&ok); //initialize DS18B20
-		  /*if (!ok)
-		  {
-			  strcpy(&(msg.str), "DS18B20_NONE\r\n\0");
-			  osMessageQueuePut(debugQueueHandle, &msg, 0, osWaitForever);
-			  osMessageQueuePut(SIM800SendQueueHandle, &msg, 0, osWaitForever);
-		  }
-		  else
-		  {
-			  DS_START_MEASURE();
-			  osDelay(1000);
-			  DS_GET_TEMPERATURE(&temp, &half_temp);
-			  sprintf(&(msg.str), "TEMP=%d\0", temp);
-			  osMessageQueuePut(debugQueueHandle, &msg, 0, osWaitForever);
-			  osMessageQueuePut(SIM800SendQueueHandle, &msg, 0, osWaitForever);
-		  }*/
-	  }
 
+		  // get smoke and move
+
+
+		  // get power
+		  power = !HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_2);
+
+		  // put string with data to queue
+		  sprintf(&(msg.str), "{\"temp\":%d,\"humidity\":%d,\"power\":%d}\r\n\0", temp, humidity, power);
+		  osMessageQueuePut(SIM800SendQueueHandle, &msg, 0, osWaitForever);
+
+	  }
   }
-  /* USER CODE END StartGetTempTask */
+  /* USER CODE END StartGetDataTask */
 }
 
 /* USER CODE BEGIN Header_StartDebugTask */
@@ -876,7 +882,7 @@ void StartDebugTask(void *argument)
   {
 	  if (osMessageQueueGet(debugQueueHandle, &msg, 0, osWaitForever) == osOK)
 	  {
-		  HAL_UART_Transmit_DMA(&huart2, msg.str, MESSAGE_TYPE_BUFF_SIZE);
+		  //HAL_UART_Transmit_DMA(&huart2, msg.str, MESSAGE_TYPE_BUFF_SIZE);
 	  }
   }
   /* USER CODE END StartDebugTask */
@@ -1346,6 +1352,7 @@ void StartMQTTConnectTask(void *argument)
 
 		  Broker_connect = 1;
 		  osTimerStart(PingTimerHandle, PING_TIME); //start ping timer
+		  osTimerStart(DataTimerHandle, GET_DATA_PERIOD); //start ping timer
 		  HAL_UART_Receive_DMA(&huart1, SIM800BuffRx, BUFF_SIM_SIZE); //start receive messages
 		  Tech_ans_wait = 0;
 
@@ -1353,7 +1360,7 @@ void StartMQTTConnectTask(void *argument)
 		  //start receiving data from broker
 		  osMutexRelease(UART1MutexHandle);
 		  PINGTaskHandle = osThreadNew(PINGStartTask, NULL, &PINGTask_attributes);
-		  sprintf(&(msg.str), "On the line, Firmware V0.91\r\n\0");
+		  sprintf(&(msg.str), "On the line, Firmware V0.92\r\n\0");
 		  osMessageQueuePut(SIM800SendQueueHandle, &msg, 0, osWaitForever);
 		  //HAL_UART_Receive_DMA(&huart1, SIM800BuffRx, BUFF_SIM_SIZE); //start receive messages
 		  osThreadTerminate(MQTTConnectTaskHandle);
@@ -1387,17 +1394,14 @@ void StartMessHandlerTask(void *argument)
 		if (String_in_String(msg.str,MESSAGE_TYPE_BUFF_SIZE,";;on"))
 		{
 			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, 0);
-			//HAL_UART_Transmit(&huart2, SIM800BuffRx, BUFF_SIM_SIZE, 1000);
 		}
 		else if (String_in_String(msg.str,MESSAGE_TYPE_BUFF_SIZE,";;off"))
 		{
 			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, 1);
-			//HAL_UART_Transmit(&huart2, SIM800BuffRx, BUFF_SIM_SIZE, 1000);
 		}
-		else if (String_in_String(msg.str,MESSAGE_TYPE_BUFF_SIZE,";;temp"))
+		else if (String_in_String(msg.str,MESSAGE_TYPE_BUFF_SIZE,";;data"))
 		{
-			Get_temp = 1;
-			//HAL_UART_Transmit(&huart2, SIM800BuffRx, BUFF_SIM_SIZE, 1000);
+			Get_data = 1;
 		}
 		else if (String_in_String(msg.str,MESSAGE_TYPE_BUFF_SIZE,";;updt"))
 		{
@@ -1414,8 +1418,6 @@ void StartMessHandlerTask(void *argument)
 				myTaskGetFirmHandle = osThreadNew(StartGetFirmware, NULL, &myTaskGetFirm_attributes);
 
 		    }
-
-			//HAL_UART_Transmit(&huart2, SIM800BuffRx, BUFF_SIM_SIZE, 1000);
 		}
 	  }
   }
@@ -1721,7 +1723,7 @@ void StartGetFirmware(void *argument)
 		  HAL_Delay(200);
 		  //";start"
 		  strcpy(&(msg.str), ";start");
-		  HAL_UART_Transmit_DMA(&huart2, msg.str, MESSAGE_TYPE_BUFF_SIZE);
+		  //HAL_UART_Transmit_DMA(&huart2, msg.str, MESSAGE_TYPE_BUFF_SIZE);
 		  HAL_Delay(1000);
 		  HAL_NVIC_SystemReset();
 		  //osThreadTerminate(myTaskGetFirmHandle);
@@ -1737,6 +1739,14 @@ void CallbackPingTimer(void *argument)
   /* USER CODE BEGIN CallbackPingTimer */
 	osSemaphoreRelease(PINGSemHandle);
   /* USER CODE END CallbackPingTimer */
+}
+
+/* CallbackDataTimer function */
+void CallbackDataTimer(void *argument)
+{
+  /* USER CODE BEGIN CallbackDataTimer */
+	Get_data = 1;
+  /* USER CODE END CallbackDataTimer */
 }
 
  /**
