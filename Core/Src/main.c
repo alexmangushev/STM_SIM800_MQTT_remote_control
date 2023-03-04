@@ -872,6 +872,10 @@ void StartGetDataTask(void *argument)
 	  if (osSemaphoreAcquire(SemGetDataHandle, osWaitForever) == osOK)
 	  {
 
+
+		  SCB_DEMCR |= CoreDebug_DEMCR_TRCENA_Msk; // permission counter
+		  DWT_CONTROL |= DWT_CTRL_CYCCNTENA_Msk;   // start counter
+
 		  // get temp and humidity
 		  // make string
 		  RS485_buf[0] = 0x01; //slave address
@@ -891,13 +895,20 @@ void StartGetDataTask(void *argument)
 		  UART2_TX_finish = 0;
 		  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, 1);
 		  HAL_UART_Transmit_DMA(&huart2, RS485_buf, 8);
-		  while (!UART2_TX_finish) {}
+
+		  uint32_t tacts = HAL_RCC_GetSysClockFreq() / 1000000;
+		  tacts *= 3000000; //timeout - 3s
+		  DWT->CYCCNT = 0; // clear counter
+		  while (!UART2_TX_finish && DWT->CYCCNT < tacts) {}
 
 		  // get ans
 		  UART2_RX_finish = 0;
 		  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, 0);
 		  HAL_UART_Receive_DMA(&huart2, RS485_buf, 9);
-		  while (!UART2_RX_finish) {}
+		  tacts = HAL_RCC_GetSysClockFreq() / 1000000;
+		  tacts *= 3000000; //timeout - 3s
+		  DWT->CYCCNT = 0; // clear counter
+		  while (!UART2_RX_finish && DWT->CYCCNT < tacts) {}
 
 		  // calculate CRC
 		  RS485CRC = usMBCRC16(RS485_buf, 7);
@@ -914,8 +925,8 @@ void StartGetDataTask(void *argument)
 		  }
 		  else
 		  {
-			  temp = 0;
-			  humidity = 0;
+			  temp = 146;
+			  humidity = 146;
 		  }
 
 
