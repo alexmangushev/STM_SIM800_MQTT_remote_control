@@ -30,6 +30,7 @@
 #include "micro_delay.h"
 #include "w25qxx.h"
 #include "private_data.h"
+#include "ModBusCRC.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -179,6 +180,11 @@ uint8_t RX = 0;  //show that SIM800 transmitted some data
 uint8_t Broker_connect = 0; //show that SIM800 connect to broker
 uint8_t Tech_ans_wait = 0; //show that we waiting special answer from module
 uint8_t Get_data = 0; //show that we have ask from server to get data
+
+// flags for UART2
+uint8_t UART2_TX_finish;
+uint8_t UART2_RX_finish;
+uint8_t RS485_buf[20];
 
 uint8_t str_SIM800[BUFF_SIM_SIZE] = {};
 uint8_t SIM800BuffRx[BUFF_SIM_SIZE] = {}; //buffer for RX data from SIM800
@@ -530,7 +536,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
+  huart2.Init.BaudRate = 9600;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
@@ -554,8 +560,8 @@ static void MX_DMA_Init(void)
 {
 
   /* DMA controller clock enable */
-  __HAL_RCC_DMA1_CLK_ENABLE();
   __HAL_RCC_DMA2_CLK_ENABLE();
+  __HAL_RCC_DMA1_CLK_ENABLE();
 
   /* DMA interrupt init */
   /* DMA1_Stream5_IRQn interrupt configuration */
@@ -638,6 +644,22 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+	if(huart == &huart2)
+	{
+		UART2_RX_finish = 1;
+	}
+}
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+	if(huart == &huart2)
+	{
+		UART2_TX_finish = 1;
+	}
+}
 
 void SPI2_Init_Master(void)
 {
@@ -839,8 +861,10 @@ void StartGetDataTask(void *argument)
   /* USER CODE BEGIN StartGetDataTask */
 	message_type msg; //string for queue
 	uint8_t power;
-	uint8_t temp = 23;
-	uint8_t humidity = 50;
+	uint16_t temp;
+	uint16_t humidity;
+
+	uint16_t RS485CRC;
   /* Infinite loop */
   for(;;)
   {
@@ -849,7 +873,51 @@ void StartGetDataTask(void *argument)
 	  {
 
 		  // get temp and humidity
-		  // Paste code for RS485
+		  // make string
+		  RS485_buf[0] = 0x01; //slave address
+		  RS485_buf[1] = 0x04; //function code
+		  RS485_buf[2] = 0x00; //
+		  RS485_buf[3] = 0x01; // starting address
+		  RS485_buf[4] = 0x00; //
+		  RS485_buf[5] = 0x02; // count of register
+
+		  // calculate CRC
+		  RS485CRC = usMBCRC16(RS485_buf, 6);
+		  RS485_buf[6] = RS485CRC;
+		  RS485CRC >>= 8;
+		  RS485_buf[7] = RS485CRC;
+
+		  // send request
+		  UART2_TX_finish = 0;
+		  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, 1);
+		  HAL_UART_Transmit_DMA(&huart2, RS485_buf, 8);
+		  while (!UART2_TX_finish) {}
+
+		  // get ans
+		  UART2_RX_finish = 0;
+		  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, 0);
+		  HAL_UART_Receive_DMA(&huart2, RS485_buf, 9);
+		  while (!UART2_RX_finish) {}
+
+		  // calculate CRC
+		  RS485CRC = usMBCRC16(RS485_buf, 7);
+		  uint16_t RS485CRC1 = (uint16_t)( RS485_buf[8] << 8 | RS485_buf[7] );
+		  uint8_t ok = (RS485CRC1 == RS485CRC) ? 1 : 0;
+
+		  if (ok)
+		  {
+			  temp = (uint16_t)( RS485_buf[3] << 8 | RS485_buf[4] );
+			  humidity = (uint16_t)( RS485_buf[5] << 8 | RS485_buf[6] );
+
+			  temp /= 10;
+			  humidity /= 10;
+		  }
+		  else
+		  {
+			  temp = 0;
+			  humidity = 0;
+		  }
+
 
 		  // get smoke and move
 
@@ -1360,7 +1428,7 @@ void StartMQTTConnectTask(void *argument)
 		  //start receiving data from broker
 		  osMutexRelease(UART1MutexHandle);
 		  PINGTaskHandle = osThreadNew(PINGStartTask, NULL, &PINGTask_attributes);
-		  sprintf(&(msg.str), "On the line, Firmware V0.92\r\n\0");
+		  sprintf(&(msg.str), "On the line, Firmware V0.93\r\n\0");
 		  osMessageQueuePut(SIM800SendQueueHandle, &msg, 0, osWaitForever);
 		  //HAL_UART_Receive_DMA(&huart1, SIM800BuffRx, BUFF_SIM_SIZE); //start receive messages
 		  osThreadTerminate(MQTTConnectTaskHandle);
