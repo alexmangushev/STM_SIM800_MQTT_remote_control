@@ -58,14 +58,14 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define FLASH_CS_Pin GPIO_PIN_4
+#define FLASH_CS_GPIO_Port GPIOA
 #define temp_Pin GPIO_PIN_7
 #define temp_GPIO_Port GPIOA
 #define SIM_START_Pin GPIO_PIN_4
 #define SIM_START_GPIO_Port GPIOC
 #define SIM_RESET_Pin GPIO_PIN_5
 #define SIM_RESET_GPIO_Port GPIOC
-#define FLASH_CS_Pin GPIO_PIN_13
-#define FLASH_CS_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

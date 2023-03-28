@@ -31,6 +31,7 @@
 #include "w25qxx.h"
 #include "private_data.h"
 #include "ModBusCRC.h"
+#include "INA226.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -41,9 +42,9 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define PING_TIME 50000  //period of sending ping package
-#define BUFF_SIM_SIZE 76 //size of RX SIM buffer
+#define BUFF_SIM_SIZE 100 //size of RX SIM buffer
 #define MESSAGE_TYPE_BUFF_SIZE 70
-#define GET_DATA_PERIOD 30000
+#define GET_DATA_PERIOD 60000
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -54,7 +55,9 @@ typedef struct {
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-I2C_HandleTypeDef hi2c1;
+I2C_HandleTypeDef hi2c2;
+DMA_HandleTypeDef hdma_i2c2_rx;
+DMA_HandleTypeDef hdma_i2c2_tx;
 
 SPI_HandleTypeDef hspi2;
 
@@ -186,6 +189,7 @@ uint8_t UART2_TX_finish;
 uint8_t UART2_RX_finish;
 uint8_t RS485_buf[20];
 
+
 uint8_t str_SIM800[BUFF_SIM_SIZE] = {};
 uint8_t SIM800BuffRx[BUFF_SIM_SIZE] = {}; //buffer for RX data from SIM800
 uint8_t firmware_buf[400] = {};
@@ -212,7 +216,7 @@ static void MX_DMA_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_SPI2_Init(void);
-static void MX_I2C1_Init(void);
+static void MX_I2C2_Init(void);
 void StartDefaultTask(void *argument);
 void StartGetDataTask(void *argument);
 void StartDebugTask(void *argument);
@@ -268,9 +272,10 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
   MX_SPI2_Init();
-  MX_I2C1_Init();
+  MX_I2C2_Init();
   /* USER CODE BEGIN 2 */
-
+  INA226_setConfig(&hi2c2, INA226_ADDRESS, INA226_MODE_CONT_SHUNT_AND_BUS | INA226_AVG_1024);
+  INA226_setCalibrationReg(&hi2c2, INA226_ADDRESS, INA226_CALIB_VAL);
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -416,36 +421,36 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief I2C1 Initialization Function
+  * @brief I2C2 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_I2C1_Init(void)
+static void MX_I2C2_Init(void)
 {
 
-  /* USER CODE BEGIN I2C1_Init 0 */
+  /* USER CODE BEGIN I2C2_Init 0 */
 
-  /* USER CODE END I2C1_Init 0 */
+  /* USER CODE END I2C2_Init 0 */
 
-  /* USER CODE BEGIN I2C1_Init 1 */
+  /* USER CODE BEGIN I2C2_Init 1 */
 
-  /* USER CODE END I2C1_Init 1 */
-  hi2c1.Instance = I2C1;
-  hi2c1.Init.ClockSpeed = 100000;
-  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
-  hi2c1.Init.OwnAddress1 = 0;
-  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-  hi2c1.Init.OwnAddress2 = 0;
-  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+  /* USER CODE END I2C2_Init 1 */
+  hi2c2.Instance = I2C2;
+  hi2c2.Init.ClockSpeed = 100000;
+  hi2c2.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c2.Init.OwnAddress1 = 0;
+  hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c2.Init.OwnAddress2 = 0;
+  hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c2) != HAL_OK)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN I2C1_Init 2 */
+  /* USER CODE BEGIN I2C2_Init 2 */
 
-  /* USER CODE END I2C1_Init 2 */
+  /* USER CODE END I2C2_Init 2 */
 
 }
 
@@ -564,12 +569,18 @@ static void MX_DMA_Init(void)
   __HAL_RCC_DMA1_CLK_ENABLE();
 
   /* DMA interrupt init */
+  /* DMA1_Stream2_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream2_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream2_IRQn);
   /* DMA1_Stream5_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
   /* DMA1_Stream6_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream6_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream6_IRQn);
+  /* DMA1_Stream7_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream7_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream7_IRQn);
   /* DMA2_Stream2_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream2_IRQn);
@@ -597,16 +608,13 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1|GPIO_PIN_3, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOA, FLASH_CS_Pin|GPIO_PIN_6, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(temp_GPIO_Port, temp_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, SIM_START_Pin|SIM_RESET_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(FLASH_CS_GPIO_Port, FLASH_CS_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pins : PC1 PC3 SIM_START_Pin SIM_RESET_Pin */
   GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_3|SIM_START_Pin|SIM_RESET_Pin;
@@ -621,25 +629,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PA4 */
-  GPIO_InitStruct.Pin = GPIO_PIN_4;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PA6 temp_Pin */
-  GPIO_InitStruct.Pin = GPIO_PIN_6|temp_Pin;
+  /*Configure GPIO pins : FLASH_CS_Pin PA6 temp_Pin */
+  GPIO_InitStruct.Pin = FLASH_CS_Pin|GPIO_PIN_6|temp_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : FLASH_CS_Pin */
-  GPIO_InitStruct.Pin = FLASH_CS_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(FLASH_CS_GPIO_Port, &GPIO_InitStruct);
 
 }
 
@@ -860,10 +855,14 @@ void StartGetDataTask(void *argument)
 {
   /* USER CODE BEGIN StartGetDataTask */
 	message_type msg; //string for queue
+	float V;
+	float I;
+
 	uint8_t power;
 	uint16_t temp;
 	uint16_t humidity;
-
+	uint8_t people;
+	uint8_t smoke;
 	uint16_t RS485CRC;
   /* Infinite loop */
   for(;;)
@@ -931,13 +930,19 @@ void StartGetDataTask(void *argument)
 
 
 		  // get smoke and move
+		  V = INA226_getBusV(&hi2c2, INA226_ADDRESS);
+		  osDelay(100);
+		  I = INA226_getCurrent(&hi2c2, INA226_ADDRESS);
+		  osDelay(100);
 
+		  people = (V > (float)6.0) ? 1 : 0;
+		  smoke = (I > (float)0.5) ? 1 : 0;
 
 		  // get power
 		  power = !HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_2);
 
 		  // put string with data to queue
-		  sprintf(&(msg.str), "{\"temp\":%d,\"humidity\":%d,\"power\":%d}\r\n\0", temp, humidity, power);
+		  sprintf(&(msg.str), "{\"temp\":%d,\"humidity\":%d,\"power\":%d,\"people\":%d,\"smoke\":%d}\r\n\0",temp, humidity, power, people, smoke);
 		  osMessageQueuePut(SIM800SendQueueHandle, &msg, 0, osWaitForever);
 
 	  }

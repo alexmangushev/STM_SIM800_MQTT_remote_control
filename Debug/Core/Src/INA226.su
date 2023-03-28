@@ -1,0 +1,17 @@
+../Core/Src/INA226.c:18:7:INA226_getBusV	16	static
+../Core/Src/INA226.c:22:7:INA226_getCurrent	16	static
+../Core/Src/INA226.c:26:7:INA226_getPower	16	static
+../Core/Src/INA226.c:30:9:INA226_setConfig	32	static
+../Core/Src/INA226.c:38:10:INA226_getConfig	32	static
+../Core/Src/INA226.c:46:10:INA226_getShuntV	32	static
+../Core/Src/INA226.c:54:10:INA226_getBusVReg	32	static
+../Core/Src/INA226.c:63:9:INA226_setCalibrationReg	32	static
+../Core/Src/INA226.c:71:10:INA226_getCalibrationReg	32	static
+../Core/Src/INA226.c:79:10:INA226_getPowerReg	32	static
+../Core/Src/INA226.c:87:10:INA226_getCurrentReg	32	static
+../Core/Src/INA226.c:95:10:INA226_getManufID	32	static
+../Core/Src/INA226.c:103:10:INA226_getDieID	32	static
+../Core/Src/INA226.c:111:9:INA226_setMaskEnable	32	static
+../Core/Src/INA226.c:119:10:INA226_getMaskEnable	32	static
+../Core/Src/INA226.c:127:9:INA226_setAlertLimit	32	static
+../Core/Src/INA226.c:135:10:INA226_getAlertLimit	32	static
