@@ -55,18 +55,16 @@ typedef struct {
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-I2C_HandleTypeDef hi2c2;
-DMA_HandleTypeDef hdma_i2c2_rx;
-DMA_HandleTypeDef hdma_i2c2_tx;
+I2C_HandleTypeDef hi2c1;
 
 SPI_HandleTypeDef hspi2;
 
-UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
-DMA_HandleTypeDef hdma_usart1_rx;
-DMA_HandleTypeDef hdma_usart1_tx;
+UART_HandleTypeDef huart6;
 DMA_HandleTypeDef hdma_usart2_rx;
 DMA_HandleTypeDef hdma_usart2_tx;
+DMA_HandleTypeDef hdma_usart6_rx;
+DMA_HandleTypeDef hdma_usart6_tx;
 
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -213,10 +211,10 @@ uint8_t TOPIC_ASK[] = "\x90\x03\0";
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
-static void MX_USART1_UART_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_SPI2_Init(void);
-static void MX_I2C2_Init(void);
+static void MX_I2C1_Init(void);
+static void MX_USART6_UART_Init(void);
 void StartDefaultTask(void *argument);
 void StartGetDataTask(void *argument);
 void StartDebugTask(void *argument);
@@ -269,13 +267,13 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-  MX_USART1_UART_Init();
   MX_USART2_UART_Init();
   MX_SPI2_Init();
-  MX_I2C2_Init();
+  MX_I2C1_Init();
+  MX_USART6_UART_Init();
   /* USER CODE BEGIN 2 */
-  INA226_setConfig(&hi2c2, INA226_ADDRESS, INA226_MODE_CONT_SHUNT_AND_BUS | INA226_AVG_1024);
-  INA226_setCalibrationReg(&hi2c2, INA226_ADDRESS, INA226_CALIB_VAL);
+  //INA226_setConfig(&hi2c1, INA226_ADDRESS, INA226_MODE_CONT_SHUNT_AND_BUS | INA226_AVG_1024);
+  //INA226_setCalibrationReg(&hi2c1, INA226_ADDRESS, INA226_CALIB_VAL);
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -421,36 +419,36 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief I2C2 Initialization Function
+  * @brief I2C1 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_I2C2_Init(void)
+static void MX_I2C1_Init(void)
 {
 
-  /* USER CODE BEGIN I2C2_Init 0 */
+  /* USER CODE BEGIN I2C1_Init 0 */
 
-  /* USER CODE END I2C2_Init 0 */
+  /* USER CODE END I2C1_Init 0 */
 
-  /* USER CODE BEGIN I2C2_Init 1 */
+  /* USER CODE BEGIN I2C1_Init 1 */
 
-  /* USER CODE END I2C2_Init 1 */
-  hi2c2.Instance = I2C2;
-  hi2c2.Init.ClockSpeed = 100000;
-  hi2c2.Init.DutyCycle = I2C_DUTYCYCLE_2;
-  hi2c2.Init.OwnAddress1 = 0;
-  hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-  hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-  hi2c2.Init.OwnAddress2 = 0;
-  hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-  hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-  if (HAL_I2C_Init(&hi2c2) != HAL_OK)
+  /* USER CODE END I2C1_Init 1 */
+  hi2c1.Instance = I2C1;
+  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c1.Init.OwnAddress1 = 0;
+  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c1.Init.OwnAddress2 = 0;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN I2C2_Init 2 */
+  /* USER CODE BEGIN I2C1_Init 2 */
 
-  /* USER CODE END I2C2_Init 2 */
+  /* USER CODE END I2C1_Init 2 */
 
 }
 
@@ -493,39 +491,6 @@ static void MX_SPI2_Init(void)
 }
 
 /**
-  * @brief USART1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USART1_UART_Init(void)
-{
-
-  /* USER CODE BEGIN USART1_Init 0 */
-
-  /* USER CODE END USART1_Init 0 */
-
-  /* USER CODE BEGIN USART1_Init 1 */
-
-  /* USER CODE END USART1_Init 1 */
-  huart1.Instance = USART1;
-  huart1.Init.BaudRate = 19200;
-  huart1.Init.WordLength = UART_WORDLENGTH_8B;
-  huart1.Init.StopBits = UART_STOPBITS_1;
-  huart1.Init.Parity = UART_PARITY_NONE;
-  huart1.Init.Mode = UART_MODE_TX_RX;
-  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USART1_Init 2 */
-
-  /* USER CODE END USART1_Init 2 */
-
-}
-
-/**
   * @brief USART2 Initialization Function
   * @param None
   * @retval None
@@ -559,34 +524,61 @@ static void MX_USART2_UART_Init(void)
 }
 
 /**
+  * @brief USART6 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART6_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART6_Init 0 */
+
+  /* USER CODE END USART6_Init 0 */
+
+  /* USER CODE BEGIN USART6_Init 1 */
+
+  /* USER CODE END USART6_Init 1 */
+  huart6.Instance = USART6;
+  huart6.Init.BaudRate = 19200;
+  huart6.Init.WordLength = UART_WORDLENGTH_8B;
+  huart6.Init.StopBits = UART_STOPBITS_1;
+  huart6.Init.Parity = UART_PARITY_NONE;
+  huart6.Init.Mode = UART_MODE_TX_RX;
+  huart6.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart6.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart6) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART6_Init 2 */
+
+  /* USER CODE END USART6_Init 2 */
+
+}
+
+/**
   * Enable DMA controller clock
   */
 static void MX_DMA_Init(void)
 {
 
   /* DMA controller clock enable */
-  __HAL_RCC_DMA2_CLK_ENABLE();
   __HAL_RCC_DMA1_CLK_ENABLE();
+  __HAL_RCC_DMA2_CLK_ENABLE();
 
   /* DMA interrupt init */
-  /* DMA1_Stream2_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream2_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Stream2_IRQn);
   /* DMA1_Stream5_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
   /* DMA1_Stream6_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream6_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream6_IRQn);
-  /* DMA1_Stream7_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream7_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Stream7_IRQn);
-  /* DMA2_Stream2_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(DMA2_Stream2_IRQn);
-  /* DMA2_Stream7_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA2_Stream7_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(DMA2_Stream7_IRQn);
+  /* DMA2_Stream1_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream1_IRQn);
+  /* DMA2_Stream6_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream6_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream6_IRQn);
 
 }
 
@@ -605,19 +597,28 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1|GPIO_PIN_3, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOC, LED_2_Pin|GPIO_PIN_1|GPIO_PIN_3|LED_3_Pin
+                          |LED_1_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, FLASH_CS_Pin|GPIO_PIN_6, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(SIM_POWER_GPIO_Port, SIM_POWER_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(LED_4_GPIO_Port, LED_4_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(temp_GPIO_Port, temp_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, SIM_START_Pin|SIM_RESET_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(FLASH_CS_GPIO_Port, FLASH_CS_Pin, GPIO_PIN_SET);
 
-  /*Configure GPIO pins : PC1 PC3 SIM_START_Pin SIM_RESET_Pin */
-  GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_3|SIM_START_Pin|SIM_RESET_Pin;
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOA, SIM_RESET_Pin|SIM_START_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pins : LED_2_Pin SIM_POWER_Pin PC1 PC3
+                           LED_3_Pin LED_1_Pin */
+  GPIO_InitStruct.Pin = LED_2_Pin|SIM_POWER_Pin|GPIO_PIN_1|GPIO_PIN_3
+                          |LED_3_Pin|LED_1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -629,12 +630,19 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : FLASH_CS_Pin PA6 temp_Pin */
-  GPIO_InitStruct.Pin = FLASH_CS_Pin|GPIO_PIN_6|temp_Pin;
+  /*Configure GPIO pins : LED_4_Pin SIM_RESET_Pin SIM_START_Pin */
+  GPIO_InitStruct.Pin = LED_4_Pin|SIM_RESET_Pin|SIM_START_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : temp_Pin FLASH_CS_Pin */
+  GPIO_InitStruct.Pin = temp_Pin|FLASH_CS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 }
 
@@ -751,12 +759,12 @@ void USER_UART_IRQHandler(UART_HandleTypeDef *huart)
 	// Set the UART DMA Half transfer complete callback
 	// huart->hdmatx->XferHalfCpltCallback = UART_DMATxHalfCplt
 
-	if(huart == &huart1) //Determine whether it is serial port 1
+	if(huart == &huart6) //Determine whether it is serial port 1
 	{
-		if(RESET != __HAL_UART_GET_FLAG(&huart1, UART_FLAG_IDLE))   //Judging whether it is idle interruption
+		if(RESET != __HAL_UART_GET_FLAG(&huart6, UART_FLAG_IDLE))   //Judging whether it is idle interruption
 		{
-			HAL_UART_DMAStop(&huart1);
-			__HAL_UART_CLEAR_IDLEFLAG(&huart1); //Clear idle interrupt sign (otherwise it will continue to enter interrupt)
+			HAL_UART_DMAStop(&huart6);
+			__HAL_UART_CLEAR_IDLEFLAG(&huart6); //Clear idle interrupt sign (otherwise it will continue to enter interrupt)
 			RX = 1;
 			if (Broker_connect)
 			{
@@ -766,13 +774,13 @@ void USER_UART_IRQHandler(UART_HandleTypeDef *huart)
 					memcpy(&(Data_Queue.str), SIM800BuffRx, MESSAGE_TYPE_BUFF_SIZE);
 					memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 					osMessageQueuePut(RxSIM800QueueHandle, &Data_Queue, 0, NULL);
-					HAL_UART_Receive_DMA(&huart1, SIM800BuffRx, BUFF_SIM_SIZE);
+					HAL_UART_Receive_DMA(&huart6, SIM800BuffRx, BUFF_SIM_SIZE);
 				}
 
 				if (!Tech_ans_wait)
 				{
 					memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
-					HAL_UART_Receive_DMA(&huart1, SIM800BuffRx, BUFF_SIM_SIZE);
+					HAL_UART_Receive_DMA(&huart6, SIM800BuffRx, BUFF_SIM_SIZE);
 				}
 
 			}
@@ -790,7 +798,7 @@ uint8_t SIM800_Ans(uint8_t exm[])
 {
 	RX = 0;
 	Tech_ans_wait = 1;
-	HAL_UART_Receive_DMA(&huart1, SIM800BuffRx, BUFF_SIM_SIZE);
+	HAL_UART_Receive_DMA(&huart6, SIM800BuffRx, BUFF_SIM_SIZE);
 
 	SCB_DEMCR |= CoreDebug_DEMCR_TRCENA_Msk; // permission counter
 	DWT_CONTROL |= DWT_CTRL_CYCCNTENA_Msk;   // start counter
@@ -831,7 +839,7 @@ void StartDefaultTask(void *argument)
 	  }
 
 	  //show that program works
-	  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_6);
+	  HAL_GPIO_TogglePin(LED_1_GPIO_Port, LED_1_Pin);
 	  osDelay(500);
 
 	  //if we have flag, start getting data
@@ -930,9 +938,9 @@ void StartGetDataTask(void *argument)
 
 
 		  // get smoke and move
-		  V = INA226_getBusV(&hi2c2, INA226_ADDRESS);
+		  V = INA226_getBusV(&hi2c1, INA226_ADDRESS);
 		  osDelay(100);
-		  I = INA226_getCurrent(&hi2c2, INA226_ADDRESS);
+		  I = INA226_getCurrent(&hi2c1, INA226_ADDRESS);
 		  osDelay(100);
 
 		  people = (V > (float)6.0) ? 1 : 0;
@@ -994,11 +1002,11 @@ void StartSIM800SendTask(void *argument)
 	  {
 		  if (osMutexAcquire(UART1MutexHandle, osWaitForever) == osOK)
 		  {
-			  __HAL_UART_ENABLE_IT(&huart1, UART_IT_IDLE);
+			  __HAL_UART_ENABLE_IT(&huart6, UART_IT_IDLE);
 
 			  memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 			  sprintf(send_MQTT_message,"AT+CIPSEND=%d\r\n\0",strlen(msg.str) + strlen(TOPIC) + 4);
-			  HAL_UART_Transmit_DMA(&huart1, send_MQTT_message, strlen(send_MQTT_message));
+			  HAL_UART_Transmit_DMA(&huart6, send_MQTT_message, strlen(send_MQTT_message));
 			  ans = SIM800_Ans(">");
 			  if (!ans)
 			  {
@@ -1009,7 +1017,7 @@ void StartSIM800SendTask(void *argument)
 
 			  //make string for transmit
 			  Make_MQTT_send_string(send_MQTT_message, msg);
-			  HAL_UART_Transmit_DMA(&huart1, send_MQTT_message, strlen(msg.str) + strlen(TOPIC) + 4);
+			  HAL_UART_Transmit_DMA(&huart6, send_MQTT_message, strlen(msg.str) + strlen(TOPIC) + 4);
 
 			  ans = SIM800_Ans("\x30"); //our transmited message
 			  if (!ans)
@@ -1023,7 +1031,7 @@ void StartSIM800SendTask(void *argument)
 			  }
 
 			  memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
-			  HAL_UART_Receive_DMA(&huart1, SIM800BuffRx, BUFF_SIM_SIZE);
+			  HAL_UART_Receive_DMA(&huart6, SIM800BuffRx, BUFF_SIM_SIZE);
 			  osMutexRelease(UART1MutexHandle); //release UART for SIM800
 		  }
 	  }
@@ -1054,14 +1062,14 @@ void PINGStartTask(void *argument)
 
 			  memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 			  sprintf(send_MQTT_message,"AT+CIPSEND=2\r\n\0");
-			  HAL_UART_Transmit_DMA(&huart1, send_MQTT_message, strlen(send_MQTT_message));
+			  HAL_UART_Transmit_DMA(&huart6, send_MQTT_message, strlen(send_MQTT_message));
 			  ans = SIM800_Ans(">");
 			  if (!ans)
 			  {
 				  strcpy(&(msg.str), "FAILE_send_PING1\r\n\0");
 				  osMessageQueuePut(debugQueueHandle, &msg, 0, osWaitForever);
 				  Error_ping = 1;
-				  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, 1); //signal for error
+				  //HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, 1); //signal for error
 				  osMutexRelease(UART1MutexHandle); //release UART for SIM800
 				  //start task to try reconnect
 				  MQTTConnectTaskHandle = osThreadNew(StartMQTTConnectTask, NULL, &MQTTConnectTask_attributes);
@@ -1070,14 +1078,14 @@ void PINGStartTask(void *argument)
 			  }
 			  osDelay(200);
 			  memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
-			  HAL_UART_Transmit_DMA(&huart1, PING, 2);
+			  HAL_UART_Transmit_DMA(&huart6, PING, 2);
 			  ans = SIM800_Ans(PING);
 			  if (!ans)
 			  {
 				  strcpy(&(msg.str), "FAILE_send_PING2\r\n\0");
 				  osMessageQueuePut(debugQueueHandle, &msg, 0, osWaitForever);
 				  Error_ping = 1;
-				  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, 1);
+				  //HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, 1);
 				  osMutexRelease(UART1MutexHandle);
 				  MQTTConnectTaskHandle = osThreadNew(StartMQTTConnectTask, NULL, &MQTTConnectTask_attributes);
 				  osThreadTerminate(PINGTaskHandle);
@@ -1093,7 +1101,7 @@ void PINGStartTask(void *argument)
 					  strcpy(&(msg.str), "FAILE_send_PING3\r\n\0");
 					  osMessageQueuePut(debugQueueHandle, &msg, 0, osWaitForever);
 					  Error_ping = 1;
-					  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, 1);
+					  //HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, 1);
 					  osMutexRelease(UART1MutexHandle);
 					  MQTTConnectTaskHandle = osThreadNew(StartMQTTConnectTask, NULL, &MQTTConnectTask_attributes);
 					  osThreadTerminate(PINGTaskHandle);
@@ -1103,7 +1111,7 @@ void PINGStartTask(void *argument)
 			  strcpy(&(msg.str), "PING_SEND_OK\r\n\0");
 			  osMessageQueuePut(debugQueueHandle, &msg, 0, osWaitForever);
 
-			  HAL_UART_Receive_DMA(&huart1, SIM800BuffRx, BUFF_SIM_SIZE);
+			  HAL_UART_Receive_DMA(&huart6, SIM800BuffRx, BUFF_SIM_SIZE);
 			  osMutexRelease(UART1MutexHandle);
 		  }
 	  }
@@ -1129,7 +1137,7 @@ void StartSIM800Task(void *argument)
   for(;;)
   {
 	  Error_init = 0;
-	  __HAL_UART_ENABLE_IT(&huart1, UART_IT_IDLE);
+	  __HAL_UART_ENABLE_IT(&huart6, UART_IT_IDLE);
 
 start:
 
@@ -1143,12 +1151,12 @@ start:
 	  	//send initializing data
 
 	  	sprintf(str_SIM800,"ATZ\r\n\0");
-	  	HAL_UART_Transmit_IT(&huart1, str_SIM800, strlen(str_SIM800));
+	  	HAL_UART_Transmit_IT(&huart6, str_SIM800, strlen(str_SIM800));
 	  	osDelay(6000);
 
 	  	memset(SIM800BuffRx, 0, BUFF_SIM_SIZE); //clear receive buffer
 	  	sprintf(str_SIM800,"AT+CIPMODE=0\r\n\0"); //make string for send
-	  	HAL_UART_Transmit_IT(&huart1, str_SIM800, strlen(str_SIM800)); //send string
+	  	HAL_UART_Transmit_IT(&huart6, str_SIM800, strlen(str_SIM800)); //send string
 	  	ans = SIM800_Ans("OK"); //waiting answer, that we transmit in function
 	  	if (!ans)
 	  	{
@@ -1160,7 +1168,7 @@ start:
 
 	  	memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 	  	sprintf(str_SIM800,"AT+CIPMUX=0\r\n\0");
-	  	HAL_UART_Transmit_IT(&huart1, str_SIM800, strlen(str_SIM800));
+	  	HAL_UART_Transmit_IT(&huart6, str_SIM800, strlen(str_SIM800));
 	  	ans = SIM800_Ans("OK");
 	  	if (!ans)
 		{
@@ -1172,7 +1180,7 @@ start:
 
 	  	memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 	  	sprintf(str_SIM800,"AT+CIPSTATUS\r\n\0");
-	  	HAL_UART_Transmit_IT(&huart1, str_SIM800, strlen(str_SIM800));
+	  	HAL_UART_Transmit_IT(&huart6, str_SIM800, strlen(str_SIM800));
 	  	ans = SIM800_Ans("OK");
 	  	if (!ans)
 		{
@@ -1184,7 +1192,7 @@ start:
 
 	  	memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 	  	sprintf(str_SIM800,"AT+CIPRXGET=0\r\n\0");
-	  	HAL_UART_Transmit_IT(&huart1, str_SIM800, strlen(str_SIM800));
+	  	HAL_UART_Transmit_IT(&huart6, str_SIM800, strlen(str_SIM800));
 	  	ans = SIM800_Ans("OK");
 	  	if (!ans)
 		{
@@ -1196,7 +1204,7 @@ start:
 
 	  	memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 	  	sprintf(str_SIM800,"AT+CSTT=\"internet.beeline.ru\",\"beeline\",\"beeline\"\r\n\0");
-	  	HAL_UART_Transmit_IT(&huart1, str_SIM800, strlen(str_SIM800));
+	  	HAL_UART_Transmit_IT(&huart6, str_SIM800, strlen(str_SIM800));
 	  	ans = SIM800_Ans("OK");
 	  	if (!ans)
 		{
@@ -1208,7 +1216,7 @@ start:
 
 	  	memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 	  	sprintf(str_SIM800,"AT+CIPSTATUS\r\n\0");
-	  	HAL_UART_Transmit_IT(&huart1, str_SIM800, strlen(str_SIM800));
+	  	HAL_UART_Transmit_IT(&huart6, str_SIM800, strlen(str_SIM800));
 	  	ans = SIM800_Ans("OK");
 	  	if (!ans)
 		{
@@ -1220,7 +1228,7 @@ start:
 
 	  	memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 	  	sprintf(str_SIM800,"AT+CIICR\r\n\0");
-	  	HAL_UART_Transmit_IT(&huart1, str_SIM800, strlen(str_SIM800));
+	  	HAL_UART_Transmit_IT(&huart6, str_SIM800, strlen(str_SIM800));
 	  	ans = SIM800_Ans("AT+CIICR");
 	  	memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 	  	ans = SIM800_Ans("OK");
@@ -1234,7 +1242,7 @@ start:
 
 	  	memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 	  	sprintf(str_SIM800,"AT+CIPSTATUS\r\n\0");
-	  	HAL_UART_Transmit_IT(&huart1, str_SIM800, strlen(str_SIM800));
+	  	HAL_UART_Transmit_IT(&huart6, str_SIM800, strlen(str_SIM800));
 	  	ans = SIM800_Ans("OK");
 	  	if (!ans)
 		{
@@ -1246,15 +1254,15 @@ start:
 
 	  	memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 	  	sprintf(str_SIM800,"AT+CIFSR\r\n\0");
-	  	HAL_UART_Transmit_IT(&huart1, str_SIM800, strlen(str_SIM800));
+	  	HAL_UART_Transmit_IT(&huart6, str_SIM800, strlen(str_SIM800));
 	  	RX = 0;
-	  	HAL_UART_Receive_DMA(&huart1, SIM800BuffRx, BUFF_SIM_SIZE);
+	  	HAL_UART_Receive_DMA(&huart6, SIM800BuffRx, BUFF_SIM_SIZE);
 	  	while (RX < 1) {};
 	  	osDelay(300);
 
 	  	memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 	  	sprintf(str_SIM800,"AT+CIPSTATUS\r\n\0");
-	  	HAL_UART_Transmit_IT(&huart1, str_SIM800, strlen(str_SIM800));
+	  	HAL_UART_Transmit_IT(&huart6, str_SIM800, strlen(str_SIM800));
 	  	ans = SIM800_Ans("OK");
 	  	if (!ans)
 		{
@@ -1269,7 +1277,7 @@ start:
 
 	  	Start_SIM800 = 1; //module starting good
 	  	osMutexRelease(UART1MutexHandle); //release UART1
-	  	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_2, 0);
+	  	HAL_GPIO_WritePin(LED_2_GPIO_Port, LED_2_Pin, 0);
 	  	//start thread to connect to broker
 	  	MQTTConnectTaskHandle = osThreadNew(StartMQTTConnectTask, NULL, &MQTTConnectTask_attributes);
 	  	osThreadTerminate(SIM800StartTaskHandle); //execute this thread
@@ -1305,17 +1313,17 @@ void StartMQTTConnectTask(void *argument)
 		  if (counter > 5)
 		  {
 			  Error_init = 1;
-			  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_2, 1);
+			  //HAL_GPIO_WritePin(GPIOC, GPIO_PIN_2, 1);
 			  Start_SIM800 = 0;
 			  osMutexRelease(UART1MutexHandle);
 			  osThreadTerminate(MQTTConnectTaskHandle);
 		  }
 
-		  __HAL_UART_ENABLE_IT(&huart1, UART_IT_IDLE);
+		  __HAL_UART_ENABLE_IT(&huart6, UART_IT_IDLE);
 		  memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 		  //sprintf(str_SIM800,"AT+CIPSTART=\"TCP\",\"broker.hivemq.com\",1883\r\0");
 		  sprintf(str_SIM800,"AT+CIPSTART=\"TCP\",\"broker.emqx.io\",1883\r\n\0");
-		  HAL_UART_Transmit_DMA(&huart1, str_SIM800, strlen(str_SIM800));
+		  HAL_UART_Transmit_DMA(&huart6, str_SIM800, strlen(str_SIM800));
 		  ans = SIM800_Ans("OK");
 		  if (!ans)
 		  {
@@ -1340,7 +1348,7 @@ void StartMQTTConnectTask(void *argument)
 		  memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 		  sprintf(str_SIM800,"AT+CIPSEND=14\r\n\0");
 		  //sprintf(str_SIM800,"AT+CIPSEND=24\r\0");
-		  HAL_UART_Transmit_DMA(&huart1, str_SIM800, strlen(str_SIM800));
+		  HAL_UART_Transmit_DMA(&huart6, str_SIM800, strlen(str_SIM800));
 		  ans = SIM800_Ans(">");
 		  if (!ans)
 		  {
@@ -1353,7 +1361,7 @@ void StartMQTTConnectTask(void *argument)
 
 		  memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 		  uint8_t send_MQTT_init[50] = "\x10\x0C\0\x04MQTT\x04\x02\0\x3C\0\0\0";
-		  HAL_UART_Transmit_DMA(&huart1, send_MQTT_init, 14);
+		  HAL_UART_Transmit_DMA(&huart6, send_MQTT_init, 14);
 		  //uint8_t send_MQTT_init[50] = "\x10\x16\0\x04MQTT\x04\x02\0\x3C\0\x0A\x34\x62\x58\x34\x56\x66\x47\x42\x51\x75\0";
 		  //HAL_UART_Transmit_DMA(&huart1, send_MQTT_init, 24);
 		  //osDelay(2000);
@@ -1386,7 +1394,7 @@ void StartMQTTConnectTask(void *argument)
 
 		  memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 		  sprintf(send_MQTT_message,"AT+CIPSEND=%d\r\n\0", strlen(TOPIC) + 7);
-		  HAL_UART_Transmit_DMA(&huart1, send_MQTT_message, strlen(send_MQTT_message));
+		  HAL_UART_Transmit_DMA(&huart6, send_MQTT_message, strlen(send_MQTT_message));
 		  ans = SIM800_Ans(">");
 		  if (!ans)
 		  {
@@ -1406,7 +1414,7 @@ void StartMQTTConnectTask(void *argument)
 		  send_MQTT_message[4] = 0;
 		  send_MQTT_message[5] = strlen(TOPIC);
 		  sprintf(send_MQTT_message + 6,"%s\0",TOPIC);
-		  HAL_UART_Transmit_DMA(&huart1, send_MQTT_message, strlen(TOPIC) + 7);
+		  HAL_UART_Transmit_DMA(&huart6, send_MQTT_message, strlen(TOPIC) + 7);
 		  ans = SIM800_Ans(send_MQTT_message);
 		  if (!ans)
 		  {
@@ -1437,14 +1445,14 @@ void StartMQTTConnectTask(void *argument)
 		  Broker_connect = 1;
 		  osTimerStart(PingTimerHandle, PING_TIME); //start ping timer
 		  osTimerStart(DataTimerHandle, GET_DATA_PERIOD); //start ping timer
-		  HAL_UART_Receive_DMA(&huart1, SIM800BuffRx, BUFF_SIM_SIZE); //start receive messages
+		  HAL_UART_Receive_DMA(&huart6, SIM800BuffRx, BUFF_SIM_SIZE); //start receive messages
 		  Tech_ans_wait = 0;
 
-		  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, 0);
+		  HAL_GPIO_WritePin(LED_3_GPIO_Port, LED_3_Pin, 0);
 		  //start receiving data from broker
 		  osMutexRelease(UART1MutexHandle);
 		  PINGTaskHandle = osThreadNew(PINGStartTask, NULL, &PINGTask_attributes);
-		  sprintf(&(msg.str), "On the line, Firmware V0.93\r\n\0");
+		  sprintf(&(msg.str), "On the line, Firmware V0.94\r\n\0");
 		  osMessageQueuePut(SIM800SendQueueHandle, &msg, 0, osWaitForever);
 		  //HAL_UART_Receive_DMA(&huart1, SIM800BuffRx, BUFF_SIM_SIZE); //start receive messages
 		  osThreadTerminate(MQTTConnectTaskHandle);
@@ -1477,11 +1485,11 @@ void StartMessHandlerTask(void *argument)
 		osMessageQueuePut(SIM800SendQueueHandle, &msg2, 0, osWaitForever);
 		if (String_in_String(msg.str,MESSAGE_TYPE_BUFF_SIZE,";;on"))
 		{
-			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, 0);
+			HAL_GPIO_WritePin(LED_4_GPIO_Port, LED_4_Pin, 0);
 		}
 		else if (String_in_String(msg.str,MESSAGE_TYPE_BUFF_SIZE,";;off"))
 		{
-			HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, 1);
+			HAL_GPIO_WritePin(LED_4_GPIO_Port, LED_4_Pin, 1);
 		}
 		else if (String_in_String(msg.str,MESSAGE_TYPE_BUFF_SIZE,";;data"))
 		{
@@ -1493,7 +1501,7 @@ void StartMessHandlerTask(void *argument)
 		    {
 				memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 				sprintf(str_SIM800,"AT+CIPCLOSE\r\n\0");
-				HAL_UART_Transmit_DMA(&huart1, str_SIM800, strlen(str_SIM800));
+				HAL_UART_Transmit_DMA(&huart6, str_SIM800, strlen(str_SIM800));
 				osDelay(1000);
 				osThreadTerminate(PINGTaskHandle);
 				osThreadTerminate(SIM800SendTaskHandle);
@@ -1528,10 +1536,10 @@ void StartGetFirmware(void *argument)
   /* Infinite loop */
   for(;;)
   {
-	  __HAL_UART_ENABLE_IT(&huart1, UART_IT_IDLE);
+	  __HAL_UART_ENABLE_IT(&huart6, UART_IT_IDLE);
 	  memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 	  sprintf(str_SIM800,"AT+FTPMODE=1\r\n\0");
-	  HAL_UART_Transmit_DMA(&huart1, str_SIM800, strlen(str_SIM800));
+	  HAL_UART_Transmit_DMA(&huart6, str_SIM800, strlen(str_SIM800));
 	  ans = SIM800_Ans("OK");
 	  if (!ans)
 	  {
@@ -1563,7 +1571,7 @@ void StartGetFirmware(void *argument)
 
 	  memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 	  sprintf(str_SIM800,"AT+FTPTYPE=I\r\n\0");
-	  HAL_UART_Transmit_DMA(&huart1, str_SIM800, strlen(str_SIM800));
+	  HAL_UART_Transmit_DMA(&huart6, str_SIM800, strlen(str_SIM800));
 	  ans = SIM800_Ans("OK");
 	  if (!ans)
 	  {
@@ -1579,7 +1587,7 @@ void StartGetFirmware(void *argument)
 
 	  memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 	  sprintf(str_SIM800,"AT+SAPBR=3,1,CONTYPE,GPRS\r\n\0");
-	  HAL_UART_Transmit_DMA(&huart1, str_SIM800, strlen(str_SIM800));
+	  HAL_UART_Transmit_DMA(&huart6, str_SIM800, strlen(str_SIM800));
 	  ans = SIM800_Ans("OK");
 	  if (!ans)
 	  {
@@ -1595,7 +1603,7 @@ void StartGetFirmware(void *argument)
 
 	  memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 	  sprintf(str_SIM800,"AT+SAPBR=3,1,APN,internet.beeline.ru\r\n\0");
-	  HAL_UART_Transmit_DMA(&huart1, str_SIM800, strlen(str_SIM800));
+	  HAL_UART_Transmit_DMA(&huart6, str_SIM800, strlen(str_SIM800));
 	  ans = SIM800_Ans("OK");
 	  if (!ans)
 	  {
@@ -1611,7 +1619,7 @@ void StartGetFirmware(void *argument)
 
 	  memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 	  sprintf(str_SIM800,"AT+SAPBR=1,1\r\n\0");
-	  HAL_UART_Transmit_DMA(&huart1, str_SIM800, strlen(str_SIM800));
+	  HAL_UART_Transmit_DMA(&huart6, str_SIM800, strlen(str_SIM800));
 	  ans = SIM800_Ans("OK");
 	  if (!ans)
 	  {
@@ -1627,7 +1635,7 @@ void StartGetFirmware(void *argument)
 
 	  memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 	  sprintf(str_SIM800,"AT+FTPCID=1\r\n\0");
-	  HAL_UART_Transmit_DMA(&huart1, str_SIM800, strlen(str_SIM800));
+	  HAL_UART_Transmit_DMA(&huart6, str_SIM800, strlen(str_SIM800));
 	  ans = SIM800_Ans("OK");
 	  if (!ans)
 	  {
@@ -1643,7 +1651,7 @@ void StartGetFirmware(void *argument)
 
 	  memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 	  sprintf(str_SIM800,"AT+FTPSERV=%s\r\n\0", DEF_IP_FTP);
-	  HAL_UART_Transmit_DMA(&huart1, str_SIM800, strlen(str_SIM800));
+	  HAL_UART_Transmit_DMA(&huart6, str_SIM800, strlen(str_SIM800));
 	  ans = SIM800_Ans("OK");
 	  if (!ans)
 	  {
@@ -1659,7 +1667,7 @@ void StartGetFirmware(void *argument)
 
 	  memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 	  sprintf(str_SIM800,"AT+FTPUN=%s\r\n\0", DEF_USER_FTP);
-	  HAL_UART_Transmit_DMA(&huart1, str_SIM800, strlen(str_SIM800));
+	  HAL_UART_Transmit_DMA(&huart6, str_SIM800, strlen(str_SIM800));
 	  ans = SIM800_Ans("OK");
 	  if (!ans)
 	  {
@@ -1675,7 +1683,7 @@ void StartGetFirmware(void *argument)
 
 	  memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 	  sprintf(str_SIM800,"AT+FTPPW=%s\r\n\0", DEF_PASSWORD_FTP);
-	  HAL_UART_Transmit_DMA(&huart1, str_SIM800, strlen(str_SIM800));
+	  HAL_UART_Transmit_DMA(&huart6, str_SIM800, strlen(str_SIM800));
 	  ans = SIM800_Ans("OK");
 	  if (!ans)
 	  {
@@ -1691,7 +1699,7 @@ void StartGetFirmware(void *argument)
 
 	  memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 	  sprintf(str_SIM800,"AT+FTPGETPATH=/firmware/\r\n\0");
-	  HAL_UART_Transmit_DMA(&huart1, str_SIM800, strlen(str_SIM800));
+	  HAL_UART_Transmit_DMA(&huart6, str_SIM800, strlen(str_SIM800));
 	  ans = SIM800_Ans("OK");
 	  if (!ans)
 	  {
@@ -1707,7 +1715,7 @@ void StartGetFirmware(void *argument)
 
 	  memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 	  sprintf(str_SIM800,"AT+FTPGETNAME=Firmware.txt\r\n\0");
-	  HAL_UART_Transmit_DMA(&huart1, str_SIM800, strlen(str_SIM800));
+	  HAL_UART_Transmit_DMA(&huart6, str_SIM800, strlen(str_SIM800));
 	  ans = SIM800_Ans("OK");
 	  if (!ans)
 	  {
@@ -1723,7 +1731,7 @@ void StartGetFirmware(void *argument)
 
 	  memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 	  sprintf(str_SIM800,"AT+FTPGETTOFS=0,Firmware.txt\r\n\0");
-	  HAL_UART_Transmit_DMA(&huart1, str_SIM800, strlen(str_SIM800));
+	  HAL_UART_Transmit_DMA(&huart6, str_SIM800, strlen(str_SIM800));
 	  ans = SIM800_Ans("OK");
 	  if (!ans)
 	  {
@@ -1740,7 +1748,7 @@ void StartGetFirmware(void *argument)
 	  memset(SIM800BuffRx, 0, BUFF_SIM_SIZE);
 	  RX = 0;
 	  Tech_ans_wait = 1;
-	  HAL_UART_Receive_DMA(&huart1, SIM800BuffRx, BUFF_SIM_SIZE);
+	  HAL_UART_Receive_DMA(&huart6, SIM800BuffRx, BUFF_SIM_SIZE);
 	  while (RX != 1) {};
 	  Tech_ans_wait = 0;
 
@@ -1787,10 +1795,10 @@ void StartGetFirmware(void *argument)
 
 			  memset(firmware_buf, 0, 399);
 			  sprintf(str_SIM800,"AT+FSREAD=C:\\User\\FTP\\Firmware.txt,1,256,%d\r\n\0", start);
-			  HAL_UART_Transmit_DMA(&huart1, str_SIM800, strlen(str_SIM800));
+			  HAL_UART_Transmit_DMA(&huart6, str_SIM800, strlen(str_SIM800));
 			  RX = 0;
 			  Tech_ans_wait = 1;
-			  HAL_UART_Receive_DMA(&huart1, firmware_buf, 390);
+			  HAL_UART_Receive_DMA(&huart6, firmware_buf, 390);
 			  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_6);
 			  while (RX != 1) {};
 			  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_6);
