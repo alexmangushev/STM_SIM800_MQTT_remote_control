@@ -1,5 +1,0 @@
-../Core/Src/DS18B20.c:10:6:DS_WRITE	40	static
-../Core/Src/DS18B20.c:43:6:DS_READ	40	static
-../Core/Src/DS18B20.c:77:6:DS_INIT	40	static
-../Core/Src/DS18B20.c:116:6:DS_START_MEASURE	32	static
-../Core/Src/DS18B20.c:140:6:DS_GET_TEMPERATURE	56	static

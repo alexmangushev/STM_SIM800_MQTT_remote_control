@@ -42,8 +42,8 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define PING_TIME 50000  //period of sending ping package
-#define BUFF_SIM_SIZE 100 //size of RX SIM buffer
-#define MESSAGE_TYPE_BUFF_SIZE 70
+#define BUFF_SIM_SIZE 120 //size of RX SIM buffer
+#define MESSAGE_TYPE_BUFF_SIZE 90
 #define GET_DATA_PERIOD 60000
 /* USER CODE END PD */
 
@@ -272,8 +272,8 @@ int main(void)
   MX_I2C1_Init();
   MX_USART6_UART_Init();
   /* USER CODE BEGIN 2 */
-  //INA226_setConfig(&hi2c1, INA226_ADDRESS, INA226_MODE_CONT_SHUNT_AND_BUS | INA226_AVG_1024);
-  //INA226_setCalibrationReg(&hi2c1, INA226_ADDRESS, INA226_CALIB_VAL);
+  INA226_setConfig(&hi2c1, INA226_ADDRESS, INA226_MODE_CONT_SHUNT_AND_BUS | INA226_AVG_1024);
+  INA226_setCalibrationReg(&hi2c1, INA226_ADDRESS, INA226_CALIB_VAL);
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -866,11 +866,11 @@ void StartGetDataTask(void *argument)
 	float V;
 	float I;
 
-	uint8_t power;
+	uint8_t power[6];
 	uint16_t temp;
 	uint16_t humidity;
-	uint8_t people;
-	uint8_t smoke;
+	uint8_t people[6];
+	uint8_t smoke[6];
 	uint16_t RS485CRC;
   /* Infinite loop */
   for(;;)
@@ -943,14 +943,29 @@ void StartGetDataTask(void *argument)
 		  I = INA226_getCurrent(&hi2c1, INA226_ADDRESS);
 		  osDelay(100);
 
-		  people = (V > (float)6.0) ? 1 : 0;
-		  smoke = (I > (float)0.5) ? 1 : 0;
+		  if (V > (float)6.0)
+			  strcpy(people, "true");
+		  else
+			  strcpy(people, "false");
+
+		  if (I > (float)0.5)
+			  strcpy(smoke, "true");
+		  else
+			  strcpy(smoke, "false");
+
+		  //people = (V > (float)6.0) ? "true" : "false";
+		  //smoke = (I > (float)0.5) ? "true" : "false";
 
 		  // get power
-		  power = !HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_2);
+		  //power = (!HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_2)) ? "true" : "false";
+
+		  if (!HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_2))
+		  	  strcpy(power, "true");
+		  else
+			  strcpy(power, "false");
 
 		  // put string with data to queue
-		  sprintf(&(msg.str), "{\"temp\":%d,\"humidity\":%d,\"power\":%d,\"people\":%d,\"smoke\":%d}\r\n\0",temp, humidity, power, people, smoke);
+		  sprintf(&(msg.str), "{\"temp\":%d,\"humidity\":%d,\"power\":%s,\"people\":%s,\"smoke\":%s}\r\n\0",temp, humidity, power, people, smoke);
 		  osMessageQueuePut(SIM800SendQueueHandle, &msg, 0, osWaitForever);
 
 	  }
@@ -1510,6 +1525,11 @@ void StartMessHandlerTask(void *argument)
 				myTaskGetFirmHandle = osThreadNew(StartGetFirmware, NULL, &myTaskGetFirm_attributes);
 
 		    }
+		}
+		else if (String_in_String(msg.str,MESSAGE_TYPE_BUFF_SIZE,";;rst"))
+		{
+			HAL_Delay(1000);
+			HAL_NVIC_SystemReset();
 		}
 	  }
   }
